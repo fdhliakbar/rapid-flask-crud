@@ -1,0 +1,111 @@
+<!-- index.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Customer CRUD</title>
+    <style>
+        body { font-family: Arial; margin: 20px; }
+        table { border-collapse: collapse; width: 100%; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        input, button { margin: 5px; padding: 5px; }
+    </style>
+</head>
+<body>
+    <h1>Customer Management</h1>
+    
+    <!-- Form -->
+    <div>
+        <input type="hidden" id="customerId">
+        <input type="text" id="name" placeholder="Name" required>
+        <input type="email" id="email" placeholder="Email" required>
+        <input type="text" id="phone" placeholder="Phone">
+        <button onclick="saveCustomer()">Save</button>
+        <button onclick="clearForm()">Clear</button>
+    </div>
+    
+    <!-- Table -->
+    <table id="customerTable">
+        <thead>
+            <tr><th>ID</th><th>Name</th><th>Email</th><th>Phone</th><th>Actions</th></tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+
+    <script>
+        const API_URL = 'http://localhost:5000';
+        
+        // Load customers
+        async function loadCustomers() {
+            const response = await fetch(`${API_URL}/customers`);
+            const customers = await response.json();
+            
+            const tbody = document.querySelector('#customerTable tbody');
+            tbody.innerHTML = customers.map(customer => `
+                <tr>
+                    <td>${customer.id}</td>
+                    <td>${customer.name}</td>
+                    <td>${customer.email}</td>
+                    <td>${customer.phone || ''}</td>
+                    <td>
+                        <button onclick="editCustomer(${customer.id})">Edit</button>
+                        <button onclick="deleteCustomer(${customer.id})">Delete</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+        
+        // Save customer (Create/Update)
+        async function saveCustomer() {
+            const id = document.getElementById('customerId').value;
+            const data = {
+                name: document.getElementById('name').value,
+                email: document.getElementById('email').value,
+                phone: document.getElementById('phone').value
+            };
+            
+            const url = id ? `${API_URL}/customers/${id}` : `${API_URL}/customers`;
+            const method = id ? 'PUT' : 'POST';
+            
+            await fetch(url, {
+                method,
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(data)
+            });
+            
+            clearForm();
+            loadCustomers();
+        }
+        
+        // Edit customer
+        async function editCustomer(id) {
+            const response = await fetch(`${API_URL}/customers`);
+            const customers = await response.json();
+            const customer = customers.find(c => c.id === id);
+            
+            document.getElementById('customerId').value = customer.id;
+            document.getElementById('name').value = customer.name;
+            document.getElementById('email').value = customer.email;
+            document.getElementById('phone').value = customer.phone || '';
+        }
+        
+        // Delete customer
+        async function deleteCustomer(id) {
+            if (confirm('Delete this customer?')) {
+                await fetch(`${API_URL}/customers/${id}`, {method: 'DELETE'});
+                loadCustomers();
+            }
+        }
+        
+        // Clear form
+        function clearForm() {
+            document.getElementById('customerId').value = '';
+            document.getElementById('name').value = '';
+            document.getElementById('email').value = '';
+            document.getElementById('phone').value = '';
+        }
+        
+        // Load data on page load
+        loadCustomers();
+    </script>
+</body>
+</html>
